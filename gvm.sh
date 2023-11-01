@@ -1,7 +1,7 @@
 #!/bin/bash
 
 latest_ver="1.21.3"
-itauproxy="[SEU PROXY AQUI]"
+proxy="-x [SEU PROXY AQUI]"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
 go_bash_root_addr="$HOME/AppData/Local/Go"
@@ -61,14 +61,45 @@ install_go_version () {
     then
         echo "Nenhuma versão indicada para instalação..."
     else
+        version_url="$url_prefix$go_version$url_suffix" # https://dl.google.com/go/go...windows-amd64.zip
+        installation_path="$go_bash_root_addr/$go_version.zip" # /c/Users/USERNAME/AppData/Local/Go/...zip"
+
+        version_exists=$(validate_url_exists "$version_url")
+
+        if [[ ! "$version_exists" == "true" ]]
+        then
+            err_message=(
+                " "
+                "*************************************************"
+                "|                   ATENÇÃO!                    |"
+                "|                                               |"
+                "|  A versão indicada não pôde ser obtida da ba- |"
+                "|  se de arquivos da Google!                    |"
+                "|                                               |"
+                "|  Verifique se a versão está correta ou avali- |"
+                "|  e se houve erro de digitação. Consulte a pá- |"
+                "|  gina com as versões corretas disponiveis no  |"
+                "|  endereço:                                    |"
+                "|                                               |"
+                "|  https://go.dev/dl/                           |"
+                "|                                               |"
+                "*************************************************"
+                " "
+                " "
+                "A instalação do Go foi suspensa."
+                "Verifique a versão conforme indicado e execute o programa novamente."
+            )
+
+            print_message "${err_message[@]}"
+
+            return 1
+        fi
+
         is_installed=$(check_if_installed "$go_version")
 
-        if [[ ! "$is_installed" = "true" ]]
+        if [[ ! "$is_installed" == "true" ]]
         then
             clear
-
-            version_url="$url_prefix$go_version$url_suffix" # https://dl.google.com/go/go...windows-amd64.zip
-            installation_path="$go_bash_root_addr/$go_version.zip" # /c/Users/USERNAME/AppData/Local/Go/...zip"
 
             echo "Instalando a versão $go_version do binario do GoLang..."
 
@@ -79,7 +110,7 @@ install_go_version () {
 
             mkdir -p "$go_path_root_addr/$go_version"
 
-            curl -k -x $itauproxy $version_url -o $installation_path
+            curl -k $proxy $version_url -o $installation_path
 
             unzd $installation_path
             rm -rf $installation_path
@@ -146,36 +177,73 @@ set_active_version () {
         echo "Verificando a existência do endereço do binário na variável PATH..."
         echo ""
 
+        goroot_var_name="%GOROOT%"
+        goroot_var_contents=$(/c/Windows/System32/cmd.exe //c echo "$goroot_var_name")
         path_var_contents=$(/c/Windows/System32/cmd.exe //c echo %PATH%)
 
-        if [[ ! "$path_var_contents" == *"$go_root_addr"* ]]
+        if [ "$goroot_var_contents" != "$goroot_var_name" ] && [[ ! "$path_var_contents" == *"$goroot_var_contents"* ]]
         then
-            echo ""
-            echo "*************************************************"
-            echo "|                   ATENÇÃO!                    |"
-            echo "|  Não foi encontrada a referência ao endereço  |"
-            echo "|  do binário do Go na variável PATH! Para que  |"
-            echo "|  seja possivel utilizar o GoLang no terminal  |"
-            echo "|  pesquise e abra o editor de variáveis de am- |"
-            echo "|  biente (selecione as variáveis para sua con- |"
-            echo "|  ta) e edite a variável PATH fazendo a inclu- |"
-            echo "|  são de uma nova linha contendo o endereço:   |"
-            echo "|                %GOROOT%\bin                   |"
-            echo "*************************************************"
-            echo ""
-            echo ""
-            echo "A ativação do Go no ambiente foi suspensa."
-            echo "Adicione a variável conforme indicado, reabra o terminal e tente novamente."
-        else
-            echo "Variável verificada! Apontando GOROOT e GOPATH pra nova versão..."
+            err_message=(
+                " "
+                "*************************************************"
+                "|                   ATENÇÃO!                    |"
+                "|  Não foi encontrada a referência ao endereço  |"
+                "|  do binário do Go na variável PATH! Para que  |"
+                "|  seja possivel utilizar o GoLang no terminal  |"
+                "|  pesquise e abra o editor de variáveis de am- |"
+                "|  biente (selecione as variáveis para sua con- |"
+                "|  ta) e edite a variável PATH fazendo a inclu- |"
+                "|  são de uma nova linha contendo o endereço:   |"
+                "|                %GOROOT%\bin                   |"
+                "*************************************************"
+                " "
+                " "
+                "A ativação do Go no ambiente foi suspensa."
+                "Adicione a variável conforme indicado, reabra o terminal e tente novamente."
+            )
 
-            /c/Windows/System32/cmd.exe //c setx GOROOT "$go_root_addr\\$go_version\\go"
-            /c/Windows/System32/cmd.exe //c setx GOPATH "$go_path_addr\\$go_version"
+            print_message "${err_message[@]}"
 
-            echo ""
-            echo "Tudo feito! A versão do Go ativa no momento é a $go_version."
-            echo "Reabra o terminal para poder utilizar a nova versão ativa."
+            return 1
+        elif [ "$goroot_var_contents" == "$goroot_var_name" ]
+        then
+            /c/Windows/System32/cmd.exe //c 1>nul setx GOROOT "$go_root_addr"
+            /c/Windows/System32/cmd.exe //c 1>nul setx GOPATH "$go_path_addr"
+            
+            err_message=(
+                " "
+                "*************************************************"
+                "|                   ATENÇÃO!                    |"
+                "|                                               |"
+                "|  A variavel GOROOT não foi encontrada presen- |"
+                "|  te no sistema.                               |"
+                "|  Como medida de segurança, será feita a cria- |"
+                "|  ção da variavel no sistema, mas a alteração  |"
+                "|  da versão ativa não será executada.          |"
+                "|                                               |"
+                "|  Execute o programa novamente para que a ver- |"
+                "|  são ativa seja alternada dentro dos critéri- |"
+                "|  os necessários.                              |"
+                "*************************************************"
+                " "
+                " "
+                "A ativação do Go no ambiente foi suspensa."
+                "Conforme indicado, reabra o terminal e tente novamente."
+            )
+
+            print_message "${err_message[@]}"
+
+            return 1
         fi
+
+        echo "Variável verificada! Apontando GOROOT e GOPATH pra nova versão..."
+
+        /c/Windows/System32/cmd.exe //c setx GOROOT "$go_root_addr\\$go_version\\go"
+        /c/Windows/System32/cmd.exe //c setx GOPATH "$go_path_addr\\$go_version"
+
+        echo ""
+        echo "Tudo feito! A versão do Go ativa no momento é a $go_version."
+        echo "Reabra o terminal para poder utilizar a nova versão ativa."
     fi
 }
 
@@ -191,6 +259,36 @@ check_if_installed () {
     fi
 
     echo "$is_installed"
+}
+
+print_message () {
+    local test_if_empty="$1"
+
+    if [ -z "${test_if_empty}" ]
+    then
+        echo "Nenhuma mensagem para exibir..."
+    else
+        local message=("$@")
+
+        for line in "${message[@]}"
+        do
+            echo "$line"
+        done
+    fi
+}
+
+validate_url_exists () {
+    local url=$1
+    local exists="false"
+
+    if [ ! -z "$url" ]
+    then
+        if curl -k $proxy --output /dev/null --silent --fail -r 0-0 "$url"; then
+            exists="true"
+        fi
+    fi
+
+    echo "$exists"
 }
 
 go_version=$1
@@ -225,34 +323,34 @@ else
     read -p ">" yn
 
     case $yn in 
-            1)
-                echo ""
-                install_go_latest;;
-            2)
-                echo ""
-                echo "Digite a versão desejada pra instalação:"
-                read -p ">" desired_ver
+        1)
+            echo ""
+            install_go_latest;;
+        2)
+            echo ""
+            echo "Digite a versão desejada pra instalação:"
+            read -p ">" desired_ver
 
-                echo ""
-                install_go_version $desired_ver;;
-            3)
-                echo ""
-                echo "Essas são as versões do Go encontradas em seu sistema. Qual deseja ativar?"
-                echo ""
+            echo ""
+            install_go_version $desired_ver;;
+        3)
+            echo ""
+            echo "Essas são as versões do Go encontradas em seu sistema. Qual deseja ativar?"
+            echo ""
 
-                desired_ver=$(select_installed_version)
-                
-                if [ "$desired_ver" != "Cancelar" ]
-                then
-                    echo ""
-                    set_active_version $desired_ver
-                else
-                    echo ""
-                    echo "Operação cancelada. Saindo do programa..."
-                fi
-                ;;
-            *)
+            desired_ver=$(select_installed_version)
+            
+            if [ "$desired_ver" != "Cancelar" ]
+            then
                 echo ""
-                echo "Saindo do programa...";;
-        esac
+                set_active_version $desired_ver
+            else
+                echo ""
+                echo "Operação cancelada. Saindo do programa..."
+            fi
+            ;;
+        *)
+            echo ""
+            echo "Saindo do programa...";;
+    esac
 fi
