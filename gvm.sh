@@ -1,5 +1,6 @@
 #!/bin/bash
 
+gvm_ver="1.0.0"
 latest_ver="1.21.3"
 proxy="-x [SEU PROXY AQUI]"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
@@ -291,66 +292,84 @@ validate_url_exists () {
     echo "$exists"
 }
 
-go_version=$1
-reVALIDATE='-?[a-z]'
+print_gvm_version () {
+    echo ""
+    echo "Go Version Manager version $gvm_ver"
+    echo ""
+    echo "Uma ferramenta da Squad Vanguarda."
+}
 
-if [ ! -z "$2" ]
-then
-    flag=$1
-    go_version=$2
-fi
+run () {
+    go_version=$1
+    reVALIDATE='-?[a-z]'
 
-if [ ! -z "$go_version" ] && [[ ! "$go_version" =~ $reVALIDATE ]] && [[ "$go_version" != "-" ]]
-then
-    is_installed=$(check_if_installed "$go_version")
-
-    if [[ "$is_installed" = "true" ]]
+    if [ ! -z "$2" ]
     then
-        set_active_version $go_version $flag
-    else
-        install_go_version $go_version $flag
+        flag=$1
+        go_version=$2
     fi
-else
-    clear
 
-    echo "Go Version Manager v1.0.0"
-    echo ""
-    echo "1) Instalar versão do Go mais recente"
-    echo "2) Instalar versão específica"
-    echo "3) Alternar versão do Go ativa no sistema"
-    echo "4) Sair"
-    echo ""
-    read -p ">" yn
+    if [ ! -z "$1" ] && ([[ "$1" == "-v" ]] || [[ "$1" == "--version" ]])
+    then
+        print_gvm_version
 
-    case $yn in 
-        1)
-            echo ""
-            install_go_latest;;
-        2)
-            echo ""
-            echo "Digite a versão desejada pra instalação:"
-            read -p ">" desired_ver
+        return 1
+    fi
 
-            echo ""
-            install_go_version $desired_ver;;
-        3)
-            echo ""
-            echo "Essas são as versões do Go encontradas em seu sistema. Qual deseja ativar?"
-            echo ""
+    if [ ! -z "$go_version" ] && [[ ! "$go_version" =~ $reVALIDATE ]] && [[ "$go_version" != "-" ]]
+    then
+        is_installed=$(check_if_installed "$go_version")
 
-            desired_ver=$(select_installed_version)
-            
-            if [ "$desired_ver" != "Cancelar" ]
-            then
+        if [[ "$is_installed" = "true" ]]
+        then
+            set_active_version $go_version $flag
+        else
+            install_go_version $go_version $flag
+        fi
+    else
+        clear
+
+        echo "Go Version Manager v1.0.0"
+        echo ""
+        echo "1) Instalar versão do Go mais recente"
+        echo "2) Instalar versão específica"
+        echo "3) Alternar versão do Go ativa no sistema"
+        echo "4) Sair"
+        echo ""
+        read -p ">" yn
+
+        case $yn in 
+            1)
                 echo ""
-                set_active_version $desired_ver
-            else
+                install_go_latest;;
+            2)
                 echo ""
-                echo "Operação cancelada. Saindo do programa..."
-            fi
-            ;;
-        *)
-            echo ""
-            echo "Saindo do programa...";;
-    esac
-fi
+                echo "Digite a versão desejada pra instalação:"
+                read -p ">" desired_ver
+
+                echo ""
+                install_go_version $desired_ver;;
+            3)
+                echo ""
+                echo "Essas são as versões do Go encontradas em seu sistema. Qual deseja ativar?"
+                echo ""
+
+                desired_ver=$(select_installed_version)
+                
+                if [ "$desired_ver" != "Cancelar" ]
+                then
+                    echo ""
+                    set_active_version $desired_ver
+                else
+                    echo ""
+                    echo "Operação cancelada. Saindo do programa..."
+                fi
+                ;;
+            *)
+                echo ""
+                echo "Saindo do programa...";;
+        esac
+    fi
+}
+
+run $1 $2
