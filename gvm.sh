@@ -142,7 +142,7 @@ select_installed_version () {
     dir_arr=("${dir_arr[@]##*/}")
     dir_arr+=("Cancelar")
 
-    PS3="> "
+    PS3="> "    
 
     select dir in "${dir_arr[@]}"
     do
@@ -292,11 +292,135 @@ validate_url_exists () {
     echo "$exists"
 }
 
+validate_if_version_is_active () {
+    local go_version=$1
+    local is_active="false"
+
+    active_version=$(/c/Windows/System32/cmd.exe //c echo %GOROOT%)
+    active_version=("${active_version%\\go}")
+    active_version=("${active_version##*\\}")
+
+    if [ ! -z "$go_version" ] && [ "$go_version" == "$active_version" ]
+    then
+        is_active="true"
+    elif [ -z "$go_version" ]
+    then
+        echo "Nenhuma versão pra validar..."
+
+        return 1
+    fi
+
+    echo $is_active
+}
+
+uninstall_go_version () {
+    local go_version=$1
+    local flag_jump=$2
+
+    if [ -z "$flag_jump" ] || [ "$flag_jump" != "-y" ]
+    then
+        echo "Deseja realizar a remoção da versão $go_version do Golang? (y/n)"
+	    read -p ">" yn
+
+        case $yn in 
+            [Yy]*)
+                echo "";;
+            *)
+                echo ""
+                echo "Saindo do programa..."
+                return 1;;
+        esac
+    fi
+
+    if [ ! -z $go_version ]
+    then
+        is_active=$(validate_if_version_is_active $go_version)
+        is_installed=$(check_if_installed $go_version)
+
+        if [ "$is_active" == "true" ]
+        then
+            warning_message=(
+                " "
+                "*************************************************"
+                "|                   ATENÇÃO!                    |"
+                "|                                               |"
+                "|  A versão indicada pra desinstalação é a ver- |"
+                "|  são que está ativa atualmente no sistema!    |"
+                "|                                               |"
+                "|  Para sua segurança, troque a versão do Go a- |"
+                "|  tiva no sistema, e execute o programa outra  |"
+                "|  vez...                                       |"
+                "|                                               |"
+                "*************************************************"
+                " "
+                " "
+                "Deseja alterar a versão ativa do Go?"
+            )
+
+            print_message "${warning_message[@]}"
+            read -p ">" yn
+
+            case $yn in 
+                [Yy]*)
+                    echo ""
+                    echo "Essas são as versões do Go encontradas em seu sistema. Qual deseja ativar?"
+                    echo ""
+
+                    desired_ver=$(select_installed_version)
+                    
+                    if [ ! -z "$desired_ver" ] && [ "$desired_ver" != "Cancelar" ]
+                    then
+                        echo ""
+                        set_active_version $desired_ver
+                    else
+                        echo ""
+                        echo "Operação cancelada. Saindo do programa..."
+                    fi
+                    ;;
+                *)
+                    echo ""
+                    echo "Saindo do programa..."
+                    return 1;;
+            esac
+
+            return 1
+        fi
+
+        if [ "$is_installed" == "false" ]
+        then
+            err_message=(
+                " "
+                "*************************************************"
+                "|                   ATENÇÃO!                    |"
+                "|                                               |"
+                "|  A versão apontada para desinstalação não pô- |"
+                "|  de ser detectada no sistema. Verifique se a  |"
+                "|  mesma realmente foi instalada, ou se ela se  |"
+                "|  encontra em outro diretório diferente do pa- |"
+                "|  drão do Go Version Manager.                  |"
+                "|                                               |"
+                "*************************************************"
+                " "
+                " "
+                "A remoção do Go foi suspensa."
+                "Valide a versão a remover e tente novamente."
+            )
+
+            print_message "${err_message[@]}"
+
+            return 1
+        fi
+
+        #procedimento de deleção...
+        echo "Remoção em construção..."
+    fi
+}
+
 print_gvm_version () {
     echo ""
     echo "Go Version Manager version $gvm_ver"
     echo ""
-    echo "Uma ferramenta da Squad Vanguarda."
+    echo "Uma ferramenta by Squad Vanguarda."
 }
 
 run () {
@@ -332,9 +456,10 @@ run () {
         echo "Go Version Manager v1.0.0"
         echo ""
         echo "1) Instalar versão do Go mais recente"
-        echo "2) Instalar versão específica"
+        echo "2) Escolher e instalar versão do Golang"
         echo "3) Alternar versão do Go ativa no sistema"
-        echo "4) Sair"
+        echo "4) Escolher e desinstalar versão do Golang"
+        echo "5) Sair"
         echo ""
         read -p ">" yn
 
@@ -356,7 +481,7 @@ run () {
 
                 desired_ver=$(select_installed_version)
                 
-                if [ "$desired_ver" != "Cancelar" ]
+                if [ ! -z "$desired_ver" ] && [ "$desired_ver" != "Cancelar" ]
                 then
                     echo ""
                     set_active_version $desired_ver
@@ -365,6 +490,12 @@ run () {
                     echo "Operação cancelada. Saindo do programa..."
                 fi
                 ;;
+            4)
+                echo ""
+                echo "Digite a versão a ser removida:"
+                read -p ">" desired_ver
+
+                uninstall_go_version $desired_ver "-y";;
             *)
                 echo ""
                 echo "Saindo do programa...";;
