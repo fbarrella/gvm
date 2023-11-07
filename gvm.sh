@@ -1,8 +1,7 @@
 #!/bin/bash
 
-gvm_ver="1.0.0"
+gvm_ver="1.0.1"
 latest_ver="1.21.3"
-proxy="-x [SEU PROXY AQUI]"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
 go_bash_root_addr="$HOME/AppData/Local/Go"
@@ -42,6 +41,7 @@ install_go_version () {
     local flag_jump=$2
     local url_prefix="https://dl.google.com/go/go"
     local url_suffix=".windows-amd64.zip"
+    local proxy=$(get_proxy_info)
 
     if [ -z "$flag_jump" ] || [ "$flag_jump" != "-y" ]
     then
@@ -281,6 +281,7 @@ print_message () {
 validate_url_exists () {
     local url=$1
     local exists="false"
+    local proxy=$(get_proxy_info)
 
     if [ ! -z "$url" ]
     then
@@ -311,6 +312,75 @@ validate_if_version_is_active () {
     fi
 
     echo $is_active
+}
+
+get_proxy_info() {
+    proxy_var_name="%GVM_PROXY%"
+    proxy_var_content=$(/c/Windows/System32/cmd.exe //c echo $proxy_var_name)
+    proxy=""
+
+    if [ "$proxy_var_content" != "$proxy_var_name" ]
+    then
+        proxy=" -x $proxy_var_content "
+    fi
+
+    echo $proxy
+}
+
+validate_if_update_is_needed () {
+    remote_file_url="https://raw.githubusercontent.com/fbarrella/gvm/main/gvm.sh"
+    proxy=$(get_proxy_info)
+
+    echo " "
+    echo "Procurando por atualizações..."
+
+    remote_ver=$(curl -v --silent $proxy $remote_file_url 2>&1 | grep -oP 'gvm_ver="\K.*[^"]')
+
+    if [ "$remote_ver" != "$gvm_ver" ]
+    then
+        echo " "
+        echo "Uma atualização é necessária!"
+        echo " "
+        echo "Deseja atualizar o Go Version Manager pra versão $remote_ver?"
+        read -p ">" yn
+
+        case $yn in
+            [Yy]*)
+                local output_file="/c/Users/$USERNAME/gvm.sh"
+                local remote_file="https://raw.githubusercontent.com/fbarrella/gvm/main/gvm.sh"
+                local backup_file="/c/Users/$USERNAME/gvm_old.sh"
+
+                if [ -f "$backup_file" ]; then
+                    rm -rf $backup_file
+                fi
+
+                echo " "
+                echo "Criando backup da versão atual na mesma pasta..."
+                echo " "
+
+                cp $output_file $backup_file
+
+                rm -rf $output_file
+
+                curl -k $proxy $download_url -o $output_file
+
+                echo " "
+                echo "GVM v$remote_ver instalado! Execute novamente, ou utilize o comando 'gvm -v' para"
+                echo "consultar a versão atual do programa."
+                echo " "
+                echo " "
+                echo "Aperte ENTER pra encerrar..."
+                read key_exit
+                ;;
+            *)
+                echo ""
+                echo "Saindo do programa..."
+                return 1;;
+        esac
+    else
+        echo " "
+        echo "Você já está utilizando a versão mais recente go GVM (v$gvm_ver)."
+    fi
 }
 
 uninstall_go_version () {
@@ -440,6 +510,13 @@ run () {
         return 1
     fi
 
+    if [ ! -z "$1" ] && ([[ "$1" == "-U" ]] || [[ "$1" == "--update" ]])
+    then
+        validate_if_update_is_needed
+
+        return 1
+    fi
+
     if [ ! -z "$go_version" ] && [[ ! "$go_version" =~ $reVALIDATE ]] && [[ "$go_version" != "-" ]]
     then
         is_installed=$(check_if_installed "$go_version")
@@ -458,7 +535,7 @@ run () {
         echo "1) Instalar versão do Go mais recente"
         echo "2) Escolher e instalar versão do Golang"
         echo "3) Alternar versão do Go ativa no sistema"
-        echo "4) Escolher e desinstalar versão do Golang"
+        echo "4) Checar por atualizações do GVM..."
         echo "5) Sair"
         echo ""
         read -p ">" yn
@@ -491,11 +568,7 @@ run () {
                 fi
                 ;;
             4)
-                echo ""
-                echo "Digite a versão a ser removida:"
-                read -p ">" desired_ver
-
-                uninstall_go_version $desired_ver "-y";;
+                validate_if_update_is_needed ;;
             *)
                 echo ""
                 echo "Saindo do programa...";;
