@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gvm_ver="1.0.2"
+gvm_ver="1.0.3"
 latest_ver="1.21.3"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
@@ -348,7 +348,6 @@ validate_if_update_is_needed () {
         case $yn in
             [Yy]*)
                 local output_file="/c/Users/$USERNAME/gvm.sh"
-                local remote_file="https://raw.githubusercontent.com/fbarrella/gvm/main/gvm.sh"
                 local backup_file="/c/Users/$USERNAME/gvm_old.sh"
 
                 if [ -f "$backup_file" ]; then
@@ -363,7 +362,7 @@ validate_if_update_is_needed () {
 
                 rm -rf $output_file
 
-                curl -k $proxy $download_url -o $output_file
+                curl -k $proxy $remote_file_url -o $output_file
 
                 echo " "
                 echo "GVM v$remote_ver instalado! Execute novamente, ou utilize o comando 'gvm -v' para"
