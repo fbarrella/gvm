@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gvm_ver="1.0.1"
+gvm_ver="1.0.2"
 latest_ver="1.21.3"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
@@ -328,13 +328,14 @@ get_proxy_info() {
 }
 
 validate_if_update_is_needed () {
-    remote_file_url="https://raw.githubusercontent.com/fbarrella/gvm/main/gvm.sh"
+    prevent_cache=$(date +%s)
+    remote_file_url="https://raw.githubusercontent.com/fbarrella/gvm/main/gvm.sh?$prevent_cache"
     proxy=$(get_proxy_info)
 
     echo " "
     echo "Procurando por atualizações..."
 
-    remote_ver=$(curl -v --silent $proxy $remote_file_url 2>&1 | grep -oP 'gvm_ver="\K.*[^"]')
+    remote_ver=$(curl -v --silent $proxy $remote_file_url 2>&1 | grep -oP 'gvm_ver="\K[0-9].*[^"]')
 
     if [ "$remote_ver" != "$gvm_ver" ]
     then
