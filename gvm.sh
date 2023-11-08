@@ -1,11 +1,10 @@
 #!/bin/bash
 
-gvm_ver="1.0.3"
-latest_ver="1.21.3"
+gvm_ver="1.1.0"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
 go_bash_root_addr="$HOME/AppData/Local/Go"
-go_path_root_addr="$HOME/Go Workspaces"
+go_bash_path_addr="$HOME/Go Workspaces"
 
 unzd () {
     if [[ $# != 1 ]]
@@ -30,6 +29,14 @@ unzd () {
 }
 
 install_go_latest () {
+    echo "Encontrando a versão mais mais recente do Go..."
+    echo " "
+
+    local go_repo_url="https://go.dev/dl/"
+    local regex_filter="<a class=\"download downloadBox\" href=\"/dl/go\K[0-9].*(?=.windows-amd64.msi)"
+    local proxy=$(get_proxy_info)
+    local latest_ver=$(curl -L -k $proxy -v $go_repo_url --silent 2>&1 | grep -oP "$regex_filter")
+
     echo "A versão mais recente mapeada do Go é a $latest_ver..."
     echo ""
 
@@ -109,7 +116,7 @@ install_go_version () {
                 mkdir -p $go_bash_root_addr
             fi
 
-            mkdir -p "$go_path_root_addr/$go_version"
+            mkdir -p "$go_bash_path_addr/$go_version"
 
             curl -k $proxy $version_url -o $installation_path
 
@@ -383,6 +390,14 @@ validate_if_update_is_needed () {
     fi
 }
 
+get_go_active_version () {
+    local go_active_ver=$(go env | grep -oP 'GOVERSION=go\K[0-9].*')
+
+    echo " "
+    echo "A versão do Golang ativa no sistema é a '$go_active_ver'."
+    echo " "
+}
+
 uninstall_go_version () {
     local go_version=$1
     local flag_jump=$2
@@ -482,7 +497,31 @@ uninstall_go_version () {
         fi
 
         #procedimento de deleção...
-        echo "Remoção em construção..."
+        echo "Remoção em progresso..."
+        echo " "
+
+        goroot_deletion_path="$go_bash_root_addr/$go_version"
+        gopath_deletion_path="$go_bash_path_addr/$go_version"
+
+        rm -rf "$goroot_deletion_path"
+        rm -rf "$gopath_deletion_path"
+
+        sleep 1
+
+        if [ ! -d "$goroot_deletion_path" ] && [ ! -d "$gopath_deletion_path" ]
+        then
+            echo "Sucesso! A versão '$go_version' já foi removida do seu sistema operacional!"
+            echo "Execute o programa novamente caso queira alterar a versão ativa..."
+            echo " "
+            echo "Pressione ENTER para encerrar"
+            read exitkey
+        else
+            echo "Falha! A versão '$go_version' não foi removida corretamente."
+            echo "Execute o programa outra vez e tente novamente..."
+            echo " "
+            echo "Pressione ENTER para encerrar"
+            read exitkey
+        fi
     fi
 }
 
@@ -490,7 +529,7 @@ print_gvm_version () {
     echo ""
     echo "Go Version Manager version $gvm_ver"
     echo ""
-    echo "Uma ferramenta by Squad Vanguarda."
+    echo "Uma ferramenta by Vanguarda."
 }
 
 run () {
@@ -517,6 +556,13 @@ run () {
         return 1
     fi
 
+    if [ ! -z "$1" ] && ([[ "$1" == "-A" ]] || [[ "$1" == "--active" ]])
+    then
+        get_go_active_version
+
+        return 1
+    fi
+
     if [ ! -z "$go_version" ] && [[ ! "$go_version" =~ $reVALIDATE ]] && [[ "$go_version" != "-" ]]
     then
         is_installed=$(check_if_installed "$go_version")
@@ -530,13 +576,15 @@ run () {
     else
         clear
 
-        echo "Go Version Manager v1.0.0"
+        echo "Go Version Manager v$gvm_ver"
         echo ""
         echo "1) Instalar versão do Go mais recente"
         echo "2) Escolher e instalar versão do Golang"
         echo "3) Alternar versão do Go ativa no sistema"
-        echo "4) Checar por atualizações do GVM..."
-        echo "5) Sair"
+        echo "4) Escolher e desinstalar versão do Golang"
+        echo "5) Visualizar versão do Go ativa no sistema"
+        echo "6) Checar por atualizações do GVM..."
+        echo "7) Sair"
         echo ""
         read -p ">" yn
 
@@ -568,6 +616,14 @@ run () {
                 fi
                 ;;
             4)
+		        echo ""
+                echo "Digite a versão a ser removida:"
+                read -p ">" desired_ver
+
+                uninstall_go_version $desired_ver "-y";;
+            5)
+                get_go_active_version ;;
+            6)
                 validate_if_update_is_needed ;;
             *)
                 echo ""
