@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gvm_ver="1.1.0"
+gvm_ver="1.1.1"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
 go_bash_root_addr="$HOME/AppData/Local/Go"
@@ -129,7 +129,7 @@ install_go_version () {
         fi
 
         echo ""
-        echo "Selecionar $go_version como a versão ativa no sistema? (Yy/Nn)"
+        echo "Selecionar $go_version como a versão ativa no sistema? (y/n)"
         read -p ">" yn
 
         case $yn in 
@@ -349,7 +349,7 @@ validate_if_update_is_needed () {
         echo " "
         echo "Uma atualização é necessária!"
         echo " "
-        echo "Deseja atualizar o Go Version Manager pra versão $remote_ver?"
+        echo "Deseja atualizar o Go Version Manager pra versão $remote_ver? (y/n)"
         read -p ">" yn
 
         case $yn in
