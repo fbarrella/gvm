@@ -1,4 +1,5 @@
-## gvm - Go Version Manager
+
+# gvm - Go Version Manager
 
 **gvm** é um aplicativo de linha de comando que permite instalar e gerenciar várias versões da linguagem de programação Go em seu sistema. Ele é escrito em script shell e tem os seguintes recursos:
 - **Verificar e instalar** a versão mais recente do binário Go do site oficial.
@@ -9,7 +10,7 @@
 - **Retornar a versão ativa** do Go no sistema do usuário.
 - **Retornar a versão do gvm** em si.
 
-### Instalação
+## Instalação
 Para instalar o **gvm**, você precisa copiar e executar a linha de comando abaixo no seu terminal.
 
 ```shell
@@ -20,7 +21,7 @@ Imediatamente será iniciado a instalação da ferramenta em seu computador. Sig
 
 Após a instalação, utilize o comando `gvm -v` para validar se tudo ocorreu bem.
 
-### Uso
+## Uso
 Para usar o **gvm**, você pode executar o comando `gvm` em seu terminal. Isso mostrará um menu com as opções disponíveis, como:
 
 ```
@@ -47,5 +48,5 @@ Por exemplo, você pode executar o comando `gvm -A` para ver a saída como:
 A versão ativa do Go no sistema é: 1.17.2
 ```
 
-### Licença
+## Licença
 **gvm** está licenciado sob a Licença MIT. Você pode encontrar o texto completo da licença no repositório GitHub.
