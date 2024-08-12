@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gvm_ver="1.1.1"
+gvm_ver="1.1.2"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
 go_bash_root_addr="$HOME/AppData/Local/Go"
@@ -329,6 +329,32 @@ get_proxy_info() {
     if [ "$proxy_var_content" != "$proxy_var_name" ]
     then
         proxy=" -x $proxy_var_content "
+
+        echo " " >$(tty)
+    	echo "Validando conexão através de proxy..." >$(tty)
+
+    	test_url="https://raw.githubusercontent.com/fbarrella/gvm/main/gvm.sh"
+    	proxy_test=$(curl -v --silent $proxy $remote_file_url 2>&1)
+
+    	if [[ "$proxy_test" =~ "SSL certificate problem" ]]
+    	then
+    	    echo " " >$(tty)
+	        echo "A conexão teste falhou e a execução do programa pode não funcionar corretamente," >$(tty)
+            echo "deseja seguir sem o uso do proxy? (y/n)" >$(tty)
+	        read -p ">" ynopt
+
+    	    case $ynopt in
+                [Yy]*)
+             	    echo " " >$(tty)
+              	    echo "Desconsiderando proxy..." >$(tty)
+		            proxy=""
+                    ;;
+                *)
+              	    echo "" >$(tty)
+               	    echo "Utilizando proxy mesmo assim..." >$(tty)
+               	    ;;
+      	    esac
+    	fi
     fi
 
     echo $proxy
@@ -343,6 +369,17 @@ validate_if_update_is_needed () {
     echo "Procurando por atualizações..."
 
     remote_ver=$(curl -v --silent $proxy $remote_file_url 2>&1 | grep -oP 'gvm_ver="\K[0-9].*[^"]')
+
+    if [ "$remote_ver" == "" ]
+    then
+        echo " "
+        echo "Erro ao tentar recuperar versão remota da ferramenta!"
+        echo ""
+        echo ""
+        echo "Saindo do programa."
+
+        return 1
+    fi
 
     if [ "$remote_ver" != "$gvm_ver" ]
     then
