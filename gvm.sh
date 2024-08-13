@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gvm_ver="1.1.2"
+gvm_ver="1.1.3"
 go_root_addr="C:\Users\\$USERNAME\AppData\Local\Go"
 go_path_addr="C:\Users\\$USERNAME\Go Workspaces"
 go_bash_root_addr="$HOME/AppData/Local/Go"
@@ -37,18 +37,35 @@ install_go_latest () {
     local proxy=$(get_proxy_info)
     local latest_ver=$(curl -L -k $proxy -v $go_repo_url --silent 2>&1 | grep -oP "$regex_filter")
 
+    if [ "$latest_ver" == "" ]
+    then
+        echo " "
+        echo "Erro ao tentar recuperar versão go Go mais recente!"
+        echo ""
+        echo ""
+        echo "Saindo do programa."
+
+        return 1
+    fi
+
+    echo ""
     echo "A versão mais recente mapeada do Go é a $latest_ver..."
     echo ""
 
-    install_go_version $latest_ver
+    install_go_version "$latest_ver" "" "$proxy"
 }
 
 install_go_version () {
     local go_version=$1
     local flag_jump=$2
+    local proxy=$3
     local url_prefix="https://dl.google.com/go/go"
     local url_suffix=".windows-amd64.zip"
-    local proxy=$(get_proxy_info)
+
+    if [ -z "$proxy" ]
+    then
+    	proxy=$(get_proxy_info)
+    fi
 
     if [ -z "$flag_jump" ] || [ "$flag_jump" != "-y" ]
     then
@@ -72,7 +89,7 @@ install_go_version () {
         version_url="$url_prefix$go_version$url_suffix" # https://dl.google.com/go/go...windows-amd64.zip
         installation_path="$go_bash_root_addr/$go_version.zip" # /c/Users/USERNAME/AppData/Local/Go/...zip"
 
-        version_exists=$(validate_url_exists "$version_url")
+        version_exists=$(validate_url_exists "$version_url" "$proxy")
 
         if [[ ! "$version_exists" == "true" ]]
         then
@@ -287,8 +304,13 @@ print_message () {
 
 validate_url_exists () {
     local url=$1
+    local proxy=$2
     local exists="false"
-    local proxy=$(get_proxy_info)
+
+    if [ ! -z "$proxy" ]
+    then
+    	proxy=$(get_proxy_info)
+    fi
 
     if [ ! -z "$url" ]
     then
